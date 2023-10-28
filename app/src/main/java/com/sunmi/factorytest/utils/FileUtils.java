@@ -4,23 +4,12 @@ import android.util.Log;
 
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.io.*;
+import java.util.*;
 import java.util.Scanner;
 
 /**
- * @author sm2886
+ * 文件操作工具类，用于创建随机文本文件、设置文件夹权限和解析文本和YAML文件。
  */
 public class FileUtils {
 
@@ -36,6 +25,11 @@ public class FileUtils {
 
     private static final String TAG = "FileUtils";
 
+    /**
+     * 创建并写入随机文本文件。
+     *
+     * @param directoryPath 要创建文件的目录路径
+     */
     public void createAndWriteRandomTextFile(String directoryPath) {
         Random random = new Random();
 
@@ -67,73 +61,11 @@ public class FileUtils {
         }
     }
 
-    public List<String> getAllTextFileContentsInSubdirectories(String directoryPath) {
-        List<String> fileContents = new ArrayList<>();
-        File directory = new File(directoryPath);
-
-        if (directory.exists() && directory.isDirectory()) {
-            File[] subdirectories = directory.listFiles(File::isDirectory);
-
-            if (subdirectories != null) {
-                for (File subdirectory : subdirectories) {
-                    // 递归读取子目录下的文本文件内容
-                    List<String> subdirectoryContents = Collections.singletonList(subdirectory.getPath() + getAllTextFileContentsInDirectory(subdirectory.getPath()));
-                    fileContents.addAll(subdirectoryContents);
-                }
-            }
-        }
-        return fileContents;
-    }
-
-    private List<String> getAllTextFileContentsInDirectory(String directoryPath) {
-        List<String> fileContents = new ArrayList<>();
-        File directory = new File(directoryPath);
-
-        if (directory.exists() && directory.isDirectory()) {
-            File[] files = directory.listFiles((dir, name) -> {
-                File file = new File(dir, name);
-                return file.isFile() && name.toLowerCase().endsWith(".txt");
-            });
-
-            if (files != null) {
-                for (File file : files) {
-                    try {
-                        String content = readTextFromFile(file);
-                        fileContents.add(content);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        // 处理读取文件时的异常
-                    }
-                }
-            }
-        }
-        return fileContents;
-    }
-
-    private String readTextFromFile(File file) throws IOException {
-        StringBuilder content = new StringBuilder();
-        BufferedReader bufferedReader = null;
-
-        try {
-            bufferedReader = new BufferedReader(new FileReader(file));
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                content.append(line).append('\n');
-                Log.e(TAG, "tianyou: " + line);
-            }
-        } finally {
-            if (bufferedReader != null) {
-                try {
-                    bufferedReader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return content.toString();
-    }
-
-
+    /**
+     * 递归设置文件夹及其子目录的权限。
+     *
+     * @param directory 要设置权限的目录
+     */
     public static void setDirectoryPermissions(File directory) {
         if (directory.exists() && directory.isDirectory()) {
             // 设置文件夹权限为可读、可写和可执行
@@ -159,7 +91,12 @@ public class FileUtils {
         }
     }
 
-
+    /**
+     * 解析指定目录下的文本和YAML文件，返回文件路径和文件内容的列表。
+     *
+     * @param directoryPath 指定目录的路径
+     * @return 包含文件路径和文件内容的列表
+     */
     public List<Map<String, Object>> parseTxtAndYamlFilesInDirectory(String directoryPath) {
         List<Map<String, Object>> textFilesData = new ArrayList<>();
         File directory = new File(directoryPath);
@@ -170,7 +107,7 @@ public class FileUtils {
         return textFilesData;
     }
 
-    private static void scanDirectoryForTextAndYamlFiles(File directory, List<Map<String, Object>> textFilesData) {
+    private void scanDirectoryForTextAndYamlFiles(File directory, List<Map<String, Object>> textFilesData) {
         File[] files = directory.listFiles((dir, name) -> name.endsWith(".txt") || name.endsWith(".yaml"));
 
         if (files != null) {
@@ -189,12 +126,7 @@ public class FileUtils {
             }
         }
 
-        File[] subdirectories = directory.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File file) {
-                return file.isDirectory();
-            }
-        });
+        File[] subdirectories = directory.listFiles(File::isDirectory);
 
         if (subdirectories != null) {
             for (File subdirectory : subdirectories) {
@@ -203,7 +135,7 @@ public class FileUtils {
         }
     }
 
-    private static String readFileContent(File file) throws IOException {
+    private String readFileContent(File file) throws IOException {
         StringBuilder content = new StringBuilder();
 
         try (FileInputStream inputStream = new FileInputStream(file);
